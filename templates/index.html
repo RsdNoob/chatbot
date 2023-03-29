@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat-GPT Client</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat-GPT Client</h1>
+        <div id="api-key-prompt">
+            <label for="api-key">API Key:</label>
+            <input type="password" id="api-key" />
+            <button id="api-key-submit">Submit API Key</button>
+        </div>
+        <div id="initial-message-prompt">
+            <label for="initial-message">Initial message:</label>
+            <textarea id="initial-message" rows="3"></textarea>
+            <button id="update-initial-message" disabled>Update Initial Message</button>
+        </div>
+        <div id="conversation" class="conversation"></div>
+        <textarea id="user-input" placeholder="Type your message..." disabled></textarea>
+        <button id="submit" disabled>Send</button>
+    </div>
+
+    <script>
+        let apiKey = null;
+        let initialMessageUpdated = false;
+
+        function loadInitialMessage() {
+            $.getJSON('/initial_message', function(data) {
+                $('#initial-message').val(data.content);
+            });
+        }
+
+        function hideApiKeyPrompt() {
+            $("#api-key-prompt").hide();
+        }
+
+        async function sendInitialMessage() {
+            const initialMessage = $("#initial-message").val();
+            const response = await $.post("/chat", {input: initialMessage, api_key: apiKey});
+            return response;
+        }
+
+        $(document).ready(function() {
+            loadInitialMessage();
+
+            $("#api-key-submit").click(function() {
+                apiKey = $("#api-key").val();
+                if (apiKey) {
+                    hideApiKeyPrompt();
+                    $("#update-initial-message").prop("disabled", false); // Enable the button
+                }
+            });
+
+            $("#update-initial-message").click(async function() {
+                if (!apiKey) {
+                    alert("Please enter your API key first.");
+                    return false;
+                }
+                $("#conversation").empty(); // Clear the conversation area
+                // Add the initial_message from the input field
+                const initialMessage = $("#initial-message").val();
+                $("#conversation").append(`<div class="message user">User: ${initialMessage}</div>`);
+                // Add a response to the initial_message
+                const response = await sendInitialMessage();
+                $("#conversation").append(`<div class="message chat-gpt">Chat-GPT: ${response.response}</div>`);
+
+                initialMessageUpdated = true;
+                $("#update-initial-message").prop("disabled", true); // Disable the button after updating the initial message
+                $("#user-input").prop("disabled", false); // Enable the input field
+                $("#submit").prop("disabled", false); // Enable the button
+            });
+
+            $("#submit").click(function(e) {
+                e.preventDefault();
+                if (!initialMessageUpdated) {
+                    alert("Please update the initial message first.");
+                    return false;
+                }
+                const userInput = $("#user-input").val();
+                if (!apiKey) {
+                    alert("Please enter your API key first.");
+                    return false;
+                }
+                if (!userInput) {
+                    alert("Please enter a message.");
+                    return false;
+                }
+                $.post("/chat", {input: userInput, api_key: apiKey}, function(data) {
+                    $("#conversation").append(`<div class="message user">User: ${userInput}</div>`);
+                    $("#conversation").append(`<div class="message chat-gpt">Chat-GPT: ${data.response}</div>`);  // Display the actual response from Flask
+                    $("#user-input").val("");  // Clear the user input field
+                });
+                return false;
+            });
+        });
+    </script>
+</body
