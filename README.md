@@ -1,6 +1,6 @@
 # Chat-GPT Client
 
-This is a sample web application built with Flask and Chat-GPT. The application allows users to chat with a legal advice bot powered by Chat-GPT.
+This is a sample web application built with Flask and Chat-GPT. The application allows users to chat with bot powered by Chat-GPT.
 
 ## Features
 
